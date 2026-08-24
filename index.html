@@ -289,6 +289,23 @@ button {
 .modal-acoes { display: flex; justify-content: flex-end; margin-top: 6px; }
 .erro { color: #b3261e; font-size: 0.85rem; margin: 0; }
 
+.linha-de-ate { display: flex; gap: 12px; margin-top: 6px; }
+.linha-de-ate .sub-campo { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.linha-de-ate label { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.linha-de-ate input { padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
+
+/* Pop-up de resumo do orçamento */
+.modal-resumo { max-width: 720px; }
+.documento-popup { max-height: 55vh; overflow-y: auto; border: 1px solid var(--border); padding: 16px 18px; border-radius: 6px; }
+.modal-acoes-resumo { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.modal-acoes-resumo button { margin-left: 0; }
+
+@media (max-width: 600px) {
+  .linha-de-ate { flex-direction: column; }
+  .modal-acoes-resumo { justify-content: stretch; }
+  .modal-acoes-resumo button { flex: 1; }
+}
+
 @media (max-width: 600px) {
   .grid-2 { grid-template-columns: 1fr; }
   .total-inline { margin-left: 0; }
@@ -431,11 +448,10 @@ button {
     <p class="hint" id="hint-gerar">Selecione ao menos um item para liberar a geração do orçamento.</p>
   </section>
 
-  <!-- PREVIEW DO DOCUMENTO -->
+  <!-- PREVIEW DO CONTRATO (documento completo, após "Gerar Contrato") -->
   <section class="card" id="preview-wrapper" hidden>
     <div class="preview-actions">
-      <button id="btn-gerar-contrato" class="btn-primary">Gerar Contrato</button>
-      <button id="btn-pdf" class="btn-secondary">Baixar PDF</button>
+      <button id="btn-pdf" class="btn-primary">Baixar PDF</button>
       <button id="btn-novo" class="btn-secondary">Novo Orçamento</button>
     </div>
     <div id="documento-preview" class="documento"></div>
@@ -469,6 +485,19 @@ button {
   </div>
 </div>
 
+<!-- POP-UP: quadro-resumo do orçamento, com opção de gerar contrato ou PDF -->
+<div id="modal-resumo-overlay" class="modal-overlay" hidden>
+  <div class="modal modal-resumo">
+    <h3>Orçamento</h3>
+    <div id="resumo-popup-conteudo" class="documento documento-popup"></div>
+    <div class="modal-acoes modal-acoes-resumo">
+      <button type="button" id="popup-editar" class="btn-secondary">Editar</button>
+      <button type="button" id="popup-gerar-contrato" class="btn-primary">Gerar Contrato</button>
+      <button type="button" id="popup-gerar-pdf" class="btn-primary">Gerar PDF do Orçamento</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL 2: perguntas antes de gerar o CONTRATO -->
 <div id="modal-contrato-overlay" class="modal-overlay" hidden>
   <div class="modal">
@@ -476,8 +505,18 @@ button {
     <form id="form-modal-contrato">
 
       <div class="field" id="campo-data-carros-contrato">
-        <label for="contrato-data-carros">Data em que os carros ficarão disponíveis</label>
-        <input type="date" id="contrato-data-carros">
+        <label>Data em que os carros ficarão disponíveis</label>
+        <div class="linha-de-ate">
+          <div class="sub-campo">
+            <label for="contrato-data-de">De</label>
+            <input type="date" id="contrato-data-de">
+          </div>
+          <div class="sub-campo">
+            <label for="contrato-data-ate">Até</label>
+            <input type="date" id="contrato-data-ate">
+          </div>
+        </div>
+        <p class="hint">Se os carros ficarem disponíveis em um único dia, preencha apenas o campo "De".</p>
       </div>
 
       <div class="field">
@@ -536,7 +575,7 @@ let state = {
   pista: false,
   palestra: false,
   docMeta: { nome: '', contato: '' },   // capturado ao gerar o orçamento, reaproveitado no contrato
-  ultimoContrato: { dataCarros: '', pagamento: '' }, // para pré-preencher o modal do contrato
+  ultimoContrato: { dataDe: '', dataAte: '', pagamento: '' }, // para pré-preencher o modal do contrato
 };
 
 // ---------- Helpers ----------
@@ -739,6 +778,51 @@ function contratantePreenchido(dados) {
   return !!(dados.contratante || dados.fantasia || dados.cnpj || dados.endereco || dados.representante);
 }
 
+// ---------- Blocos de identificação das Partes (compartilhado entre Orçamento e Contrato) ----------
+function criarBlocosPartes(dadosContratante, temContratante) {
+  const blocoContratante = temContratante ? `
+      <div class="bloco-parte">
+        <p><strong>CONTRATANTE:</strong> ${escapeHtml(dadosContratante.contratante) || '—'}</p>
+        <p><strong>NOME FANTASIA:</strong> ${escapeHtml(dadosContratante.fantasia) || '—'}</p>
+        <p><strong>CNPJ:</strong> ${escapeHtml(dadosContratante.cnpj) || '—'}</p>
+        <p><strong>ENDEREÇO:</strong> ${escapeHtml(dadosContratante.endereco) || '—'}</p>
+        <p><strong>REPRESENTANTE LEGAL:</strong> ${escapeHtml(dadosContratante.representante) || '—'}</p>
+      </div>` : '';
+
+  const blocoContratada = `
+    <div class="bloco-parte">
+      <p><strong>CONTRATADA:</strong> ${CONTRATADA.nome}</p>
+      <p><strong>CNPJ:</strong> ${CONTRATADA.cnpj}</p>
+      <p><strong>BANCO:</strong> ${CONTRATADA.banco}</p>
+      <p><strong>AGÊNCIA:</strong> ${CONTRATADA.agencia}</p>
+      <p><strong>CONTA CORRENTE:</strong> ${CONTRATADA.contaCorrente}</p>
+    </div>`;
+
+  return { blocoContratante, blocoContratada };
+}
+
+// ---------- Tabela-resumo dos itens (compartilhada entre Orçamento e Contrato) ----------
+function criarTabelaResumo(itens, total) {
+  const linhasResumo = itens.map(it => `
+    <tr>
+      <td>${escapeHtml(it.nome)}</td>
+      <td>${it.qtd}</td>
+      <td>${escapeHtml(it.precoLabel)}: ${formatBRL(it.precoUnit)}</td>
+      <td class="num">${formatBRL(it.total)}</td>
+    </tr>`).join('');
+
+  return `
+    <table class="doc-resumo">
+      <thead>
+        <tr><th>Item</th><th>Quantidade</th><th>Preço utilizado</th><th>Valor total</th></tr>
+      </thead>
+      <tbody>${linhasResumo}</tbody>
+      <tfoot>
+        <tr><td colspan="3">VALOR TOTAL DO ORÇAMENTO</td><td class="num">${formatBRL(total)}</td></tr>
+      </tfoot>
+    </table>`;
+}
+
 // ---------- Modal 1: Gerar Orçamento (pede Nome/Contato) ----------
 const modalOverlay = document.getElementById('modal-overlay');
 const formModal = document.getElementById('form-modal');
@@ -770,10 +854,35 @@ formModal.addEventListener('submit', function (e) {
 
   state.docMeta = { nome, contato };
   fecharModal();
-  gerarDocumento('orcamento', {});
+  abrirPopupResumo();
 });
 
-// ---------- Modal 2: Gerar Contrato (pede Data dos carros / Forma de pagamento) ----------
+// ---------- Pop-up: quadro-resumo do orçamento (quadro-resumo + partes) ----------
+const modalResumoOverlay = document.getElementById('modal-resumo-overlay');
+const resumoPopupConteudo = document.getElementById('resumo-popup-conteudo');
+
+function abrirPopupResumo() {
+  resumoPopupConteudo.innerHTML = gerarResumoHTML();
+  modalResumoOverlay.hidden = false;
+}
+
+function fecharPopupResumo() {
+  modalResumoOverlay.hidden = true;
+}
+
+document.getElementById('popup-editar').addEventListener('click', fecharPopupResumo);
+
+document.getElementById('popup-gerar-contrato').addEventListener('click', function () {
+  fecharPopupResumo();
+  abrirModalContrato();
+});
+
+document.getElementById('popup-gerar-pdf').addEventListener('click', function () {
+  fecharPopupResumo();
+  exibirNoDocumentoEImprimir('orcamento', gerarResumoHTML());
+});
+
+// ---------- Modal 2: Gerar Contrato (pede Data De/Até dos carros / Forma de pagamento) ----------
 const modalContratoOverlay = document.getElementById('modal-contrato-overlay');
 const formModalContrato = document.getElementById('form-modal-contrato');
 const campoDataCarrosContrato = document.getElementById('campo-data-carros-contrato');
@@ -782,10 +891,11 @@ const modalContratoErro = document.getElementById('modal-contrato-erro');
 function abrirModalContrato() {
   const temCarros = subtotalCarros() > 0;
   campoDataCarrosContrato.style.display = temCarros ? '' : 'none';
-  document.getElementById('contrato-data-carros').required = temCarros;
+  document.getElementById('contrato-data-de').required = temCarros;
 
   // pré-preenche com o que foi informado da última vez, se houver
-  document.getElementById('contrato-data-carros').value = state.ultimoContrato.dataCarros || '';
+  document.getElementById('contrato-data-de').value = state.ultimoContrato.dataDe || '';
+  document.getElementById('contrato-data-ate').value = state.ultimoContrato.dataAte || '';
   document.getElementById('contrato-pagamento').value = state.ultimoContrato.pagamento || '';
 
   modalContratoErro.hidden = true;
@@ -796,83 +906,83 @@ function fecharModalContrato() {
   modalContratoOverlay.hidden = true;
 }
 
-document.getElementById('btn-gerar-contrato').addEventListener('click', abrirModalContrato);
 document.getElementById('modal-contrato-cancelar').addEventListener('click', fecharModalContrato);
 
 formModalContrato.addEventListener('submit', function (e) {
   e.preventDefault();
 
   const temCarros = subtotalCarros() > 0;
-  const dataCarros = document.getElementById('contrato-data-carros').value;
+  const dataDe = document.getElementById('contrato-data-de').value;
+  const dataAte = document.getElementById('contrato-data-ate').value;
   const pagamento = document.getElementById('contrato-pagamento').value.trim();
 
-  if ((temCarros && !dataCarros) || !pagamento) {
+  if ((temCarros && !dataDe) || !pagamento) {
     modalContratoErro.textContent = 'Preencha todos os campos obrigatórios antes de continuar.';
     modalContratoErro.hidden = false;
     return;
   }
 
-  state.ultimoContrato = { dataCarros, pagamento };
+  if (dataAte && dataAte < dataDe) {
+    modalContratoErro.textContent = 'A data "Até" não pode ser anterior à data "De".';
+    modalContratoErro.hidden = false;
+    return;
+  }
+
+  state.ultimoContrato = { dataDe, dataAte, pagamento };
   fecharModalContrato();
-  gerarDocumento('contrato', { dataCarros, pagamento });
+  const html = gerarContratoHTML(dataDe, dataAte, pagamento);
+  exibirNoDocumento('contrato', html);
 });
 
-// ---------- Geração do documento ----------
-// tipo: 'orcamento' (sem data dos carros / forma de pagamento) ou 'contrato' (com ambos)
-function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
+// ---------- Geração do ORÇAMENTO (quadro-resumo + partes, sem cláusulas contratuais) ----------
+function gerarResumoHTML() {
+  const { nome, contato } = state.docMeta;
+  const dadosContratante = getDadosContratante();
+  const temContratante = contratantePreenchido(dadosContratante);
+  const itens = getItensSelecionados();
+  const total = totalGeral();
+
+  const agora = new Date();
+  const dataGeracao = agora.toLocaleString('pt-BR');
+
+  const { blocoContratante, blocoContratada } = criarBlocosPartes(dadosContratante, temContratante);
+  const tabelaResumo = criarTabelaResumo(itens, total);
+
+  return `
+    <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)} — Gerado em ${dataGeracao}</div>
+    <div class="doc-tag doc-tag-orcamento">ORÇAMENTO — documento preliminar, sujeito à geração do Contrato</div>
+    <h2 class="doc-titulo">Orçamento<br>Drives Interlagos</h2>
+
+    ${temContratante ? blocoContratante : ''}
+    ${blocoContratada}
+
+    <h3 class="doc-clausula">Resumo do Orçamento</h3>
+    ${tabelaResumo}
+  `;
+}
+
+// ---------- Geração do CONTRATO (documento completo, com cláusulas) ----------
+// dataDe/dataAte: período em que os carros ficarão disponíveis (dataAte é opcional — se vazio, considera-se um único dia)
+function gerarContratoHTML(dataDe, dataAte, pagamento) {
   const { nome, contato } = state.docMeta;
   const dadosContratante = getDadosContratante();
   const temContratante = contratantePreenchido(dadosContratante);
   const itens = getItensSelecionados();
   const total = totalGeral();
   const temCarros = subtotalCarros() > 0;
-  const temData = !!dataCarros;
+  const temData = !!dataDe;
   const temPagamento = !!pagamento;
 
   const agora = new Date();
   const dataGeracao = agora.toLocaleString('pt-BR');
   const dataAssinaturaExtenso = formatDataExtenso(agora);
-  const dataCarrosBR = formatDataBR(dataCarros);
+  const dataDeBR = formatDataBR(dataDe);
+  const dataAteBR = formatDataBR(dataAte || dataDe);
+  const mesmoDia = temData && (!dataAte || dataAte === dataDe);
+  const textoDisponibilidade = mesmoDia ? `no dia ${dataDeBR}` : `no período de ${dataDeBR} a ${dataAteBR}`;
 
-  // ---- Bloco CONTRATANTE ----
-  // Só aparece no quadro-resumo se algum dado do Contratante tiver sido preenchido.
-  const blocoContratante = temContratante ? `
-      <div class="bloco-parte">
-        <p><strong>CONTRATANTE:</strong> ${escapeHtml(dadosContratante.contratante) || '—'}</p>
-        <p><strong>NOME FANTASIA:</strong> ${escapeHtml(dadosContratante.fantasia) || '—'}</p>
-        <p><strong>CNPJ:</strong> ${escapeHtml(dadosContratante.cnpj) || '—'}</p>
-        <p><strong>ENDEREÇO:</strong> ${escapeHtml(dadosContratante.endereco) || '—'}</p>
-        <p><strong>REPRESENTANTE LEGAL:</strong> ${escapeHtml(dadosContratante.representante) || '—'}</p>
-      </div>` : '';
-
-  const blocoContratada = `
-    <div class="bloco-parte">
-      <p><strong>CONTRATADA:</strong> ${CONTRATADA.nome}</p>
-      <p><strong>CNPJ:</strong> ${CONTRATADA.cnpj}</p>
-      <p><strong>BANCO:</strong> ${CONTRATADA.banco}</p>
-      <p><strong>AGÊNCIA:</strong> ${CONTRATADA.agencia}</p>
-      <p><strong>CONTA CORRENTE:</strong> ${CONTRATADA.contaCorrente}</p>
-    </div>`;
-
-  // ---- Tabela resumo ----
-  const linhasResumo = itens.map(it => `
-    <tr>
-      <td>${escapeHtml(it.nome)}</td>
-      <td>${it.qtd}</td>
-      <td>${escapeHtml(it.precoLabel)}: ${formatBRL(it.precoUnit)}</td>
-      <td class="num">${formatBRL(it.total)}</td>
-    </tr>`).join('');
-
-  const tabelaResumo = `
-    <table class="doc-resumo">
-      <thead>
-        <tr><th>Item</th><th>Quantidade</th><th>Preço utilizado</th><th>Valor total</th></tr>
-      </thead>
-      <tbody>${linhasResumo}</tbody>
-      <tfoot>
-        <tr><td colspan="3">VALOR TOTAL DO ORÇAMENTO</td><td class="num">${formatBRL(total)}</td></tr>
-      </tfoot>
-    </table>`;
+  const { blocoContratante, blocoContratada } = criarBlocosPartes(dadosContratante, temContratante);
+  const tabelaResumo = criarTabelaResumo(itens, total);
 
   // ---- Cláusula Primeira ----
   const carrosSelecionados = itens.filter(it => it.categoria === 'Carro');
@@ -886,7 +996,7 @@ function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
       <p>${listaCarros}</p>`;
     if (temData) {
       clausula1 += `
-      <p>Os carros ficarão disponíveis no dia ${dataCarrosBR}, no Autódromo José Carlos Pace, localizado na Avenida Senador Teotônio Vilela, nº 261, Interlagos, São Paulo – SP, CEP 04801-010, para realização de test-drives, onde a(s) pessoa(s) indicada(s) pela CONTRATANTE irá(ão) pilotar o(s) veículo(s) com a instrução e presença de instrutor indicado pela CONTRATADA, que passará um treinamento para o(s) indicado(s).</p>
+      <p>Os carros ficarão disponíveis ${textoDisponibilidade}, no Autódromo José Carlos Pace, localizado na Avenida Senador Teotônio Vilela, nº 261, Interlagos, São Paulo – SP, CEP 04801-010, para realização de test-drives, onde a(s) pessoa(s) indicada(s) pela CONTRATANTE irá(ão) pilotar o(s) veículo(s) com a instrução e presença de instrutor indicado pela CONTRATADA, que passará um treinamento para o(s) indicado(s).</p>
       <p>Os indicados devem possuir Carteira Nacional de Habilitação (CNH) válida.</p>
       <p>Durante os passeios, a CONTRATANTE não terá responsabilidade alguma sobre os veículos, ficando a relação jurídica sobre este tema apenas entre a CONTRATADA e os condutores dos veículos, os quais assinarão termo de responsabilidade.</p>
       <p>Se ocorrer alguma falha mecânica ou acidente em algum dos veículos durante os passeios, os passeios que ainda estiverem pendentes de realização serão efetuados somente com os demais veículos disponíveis.</p>
@@ -912,7 +1022,7 @@ function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
   // ---- Cláusula Segunda ----
   let prazoTexto;
   if (temData) {
-    prazoTexto = `o dia ${dataCarrosBR}`;
+    prazoTexto = `o dia ${dataAteBR}`;
   } else if (temCarros) {
     prazoTexto = 'a data de disponibilização dos carros, a ser definida no Contrato';
   } else {
@@ -967,7 +1077,7 @@ function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
 
   const documentoHTML = `
     <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)} — Gerado em ${dataGeracao}</div>
-    <div class="doc-tag doc-tag-${tipo}">${tipo === 'contrato' ? 'CONTRATO' : 'ORÇAMENTO — documento preliminar, sujeito à geração do Contrato'}</div>
+    <div class="doc-tag doc-tag-contrato">CONTRATO</div>
     <h2 class="doc-titulo">Contrato de Locação de Veículos e Prestação de Serviços<br>Drives Interlagos</h2>
 
     ${temContratante ? `
@@ -1028,16 +1138,27 @@ function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
     </div>
   `;
 
+  return documentoHTML;
+}
+
+// ---------- Exibição do documento gerado (inline na página, usado para impressão) ----------
+function exibirNoDocumento(tipo, html) {
   const preview = document.getElementById('documento-preview');
-  preview.innerHTML = documentoHTML;
+  preview.innerHTML = html;
 
   const wrapper = document.getElementById('preview-wrapper');
   wrapper.hidden = false;
   wrapper.scrollIntoView({ behavior: 'smooth' });
 
-  // guarda dados para o nome do arquivo PDF e para o próximo passo (gerar contrato)
+  const dadosContratante = getDadosContratante();
+  const { nome } = state.docMeta;
   wrapper.dataset.nomeArquivo = sanitizeFileName(dadosContratante.fantasia || dadosContratante.contratante || nome);
   wrapper.dataset.tipoDocumento = tipo;
+}
+
+function exibirNoDocumentoEImprimir(tipo, html) {
+  exibirNoDocumento(tipo, html);
+  imprimirDocumentoAtual();
 }
 
 function romano(n) {
@@ -1057,7 +1178,7 @@ function sanitizeFileName(str) {
 // Gera o PDF usando a função nativa de impressão do navegador (Salvar como PDF),
 // o que produz um documento com texto real (selecionável e pesquisável), em vez
 // de uma imagem — mais adequado para um contrato.
-document.getElementById('btn-pdf').addEventListener('click', function () {
+function imprimirDocumentoAtual() {
   const wrapper = document.getElementById('preview-wrapper');
   const hoje = new Date();
   const carimbo = `${hoje.getFullYear()}${String(hoje.getMonth() + 1).padStart(2, '0')}${String(hoje.getDate()).padStart(2, '0')}_${String(hoje.getHours()).padStart(2, '0')}${String(hoje.getMinutes()).padStart(2, '0')}`;
@@ -1071,7 +1192,9 @@ document.getElementById('btn-pdf').addEventListener('click', function () {
   window.addEventListener('afterprint', restaurarTitulo, { once: true });
 
   window.print();
-});
+}
+
+document.getElementById('btn-pdf').addEventListener('click', imprimirDocumentoAtual);
 
 // ---------- Novo orçamento ----------
 document.getElementById('btn-novo').addEventListener('click', function () {
