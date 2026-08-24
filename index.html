@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interlagos SP — Gerador de Orçamento</title>
+<style>
+:root {
+  --brand: #7a1f1f;
+  --brand-dark: #5c1717;
+  --bg: #f4f2ef;
+  --card-bg: #ffffff;
+  --border: #e0dcd5;
+  --text: #2b2622;
+  --muted: #766f66;
+  --ok: #2f7d4f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: #fff;
+  padding: 28px 20px;
+}
+.topbar-inner { max-width: 900px; margin: 0 auto; }
+.topbar h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.topbar p { margin: 0; opacity: 0.9; font-family: Arial, sans-serif; }
+
+.container {
+  max-width: 900px;
+  margin: 24px auto 60px;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  color: var(--brand-dark);
+  font-family: 'Georgia', serif;
+}
+
+.opcional { font-size: 0.75rem; color: var(--muted); font-weight: normal; }
+
+.hint { color: var(--muted); font-size: 0.85rem; margin: 4px 0 12px; }
+
+.table-scroll { overflow-x: auto; }
+
+table.tabela-itens {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+table.tabela-itens th, table.tabela-itens td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+table.tabela-itens th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+table.tabela-itens input[type="number"] { width: 70px; padding: 6px; }
+table.tabela-itens select { padding: 6px; }
+table.tabela-itens td.valor-total { font-weight: 600; text-align: right; }
+
+.subtotal-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.field-row label { font-weight: 600; }
+.field-row input[type="number"] { width: 100px; padding: 8px; }
+.total-inline { margin-left: auto; }
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+.checkbox-line input { width: 18px; height: 18px; }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.field input, .field textarea, .field select {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.dados-fixos p { margin: 4px 0; }
+
+.total-card {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.total-geral-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+  font-size: 1.2rem;
+}
+.total-geral-row strong { font-size: 1.5rem; }
+
+.acoes { text-align: center; }
+
+button {
+  font-family: Arial, sans-serif;
+  font-size: 0.95rem;
+  padding: 12px 26px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+}
+.btn-primary:disabled {
+  background: #c9c2ba;
+  cursor: not-allowed;
+}
+.btn-primary:not(:disabled):hover { background: var(--brand-dark); }
+.btn-secondary {
+  background: #eee;
+  color: var(--text);
+  margin-left: 10px;
+}
+.btn-secondary:hover { background: #ddd; }
+
+.preview-actions { margin-bottom: 16px; text-align: right; }
+
+/* Documento (estilo contrato) */
+.documento {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #111;
+  padding: 10px 4px;
+}
+.documento h2.doc-titulo {
+  text-align: center;
+  font-size: 16px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.documento h3.doc-clausula {
+  font-size: 14px;
+  text-transform: uppercase;
+  margin-top: 24px;
+  margin-bottom: 10px;
+}
+.documento p { margin: 8px 0; text-align: justify; }
+.documento .doc-meta {
+  font-size: 11px;
+  color: #666;
+  text-align: right;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  font-family: Arial, sans-serif;
+}
+.documento .bloco-parte {
+  border: 1px solid #999;
+  padding: 10px 14px;
+  margin: 10px 0 16px;
+  font-family: Arial, sans-serif;
+  font-size: 12.5px;
+}
+.documento .bloco-parte p { margin: 3px 0; text-align: left; }
+.documento table.doc-resumo {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0 18px;
+  font-family: Arial, sans-serif;
+  font-size: 12.5px;
+}
+.documento table.doc-resumo th, .documento table.doc-resumo td {
+  border: 1px solid #999;
+  padding: 6px 8px;
+  text-align: left;
+}
+.documento table.doc-resumo th { background: #f0ede8; }
+.documento table.doc-resumo td.num { text-align: right; }
+.documento table.doc-resumo tfoot td { font-weight: bold; background: #f7f5f2; }
+.documento .assinaturas {
+  margin-top: 50px;
+}
+.documento .linha-assinatura {
+  margin-top: 46px;
+  text-align: center;
+}
+.documento .linha-assinatura .linha { border-top: 1px solid #111; width: 320px; margin: 0 auto 6px; }
+.documento .testemunhas {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 50px;
+  font-family: Arial, sans-serif;
+  font-size: 12.5px;
+}
+.documento .testemunhas .test { width: 45%; }
+.documento .testemunhas .linha { border-top: 1px solid #111; margin-bottom: 6px; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+.modal-overlay[hidden] {
+  display: none;
+}
+.modal {
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  font-family: Arial, sans-serif;
+}
+.modal h3 { margin-top: 0; color: var(--brand-dark); }
+.modal form { display: flex; flex-direction: column; gap: 14px; }
+.modal-acoes { display: flex; justify-content: flex-end; margin-top: 6px; }
+.erro { color: #b3261e; font-size: 0.85rem; margin: 0; }
+
+@media (max-width: 600px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .total-inline { margin-left: 0; }
+}
+
+@media print {
+  body { background: #fff; }
+  .topbar, .card:not(#preview-wrapper), .preview-actions, .modal-overlay { display: none !important; }
+  .container { margin: 0; padding: 0; max-width: none; }
+  #preview-wrapper { border: none; padding: 0; margin: 0; border-radius: 0; }
+  .documento { padding: 0; font-size: 12.5px; }
+  .documento table.doc-resumo { page-break-inside: avoid; }
+  .documento .assinaturas { page-break-inside: avoid; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1>Salão Super Carros Gramado</h1>
+    <p>Gerador de Orçamento — Drives Interlagos</p>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- 1. CARROS -->
+  <section class="card">
+    <h2>1. Carros</h2>
+    <p class="hint">Informe a quantidade de cada veículo e escolha, em cada linha, se o orçamento deve usar o Preço Cheio ou o Preço Net.</p>
+    <div class="table-scroll">
+      <table id="tabela-carros" class="tabela-itens">
+        <thead>
+          <tr>
+            <th>Veículo</th>
+            <th>Preço</th>
+            <th>Quantidade</th>
+            <th>Valor total</th>
+          </tr>
+        </thead>
+        <tbody><!-- gerado via JS --></tbody>
+      </table>
+    </div>
+    <div class="subtotal-row">
+      <span>Subtotal Carros:</span>
+      <strong id="subtotal-carros">R$ 0,00</strong>
+    </div>
+  </section>
+
+  <!-- 2. ALIMENTAÇÃO -->
+  <section class="card">
+    <h2>2. Alimentação</h2>
+    <p class="hint">Valor de R$ 283,00 por pessoa.</p>
+    <div class="field-row">
+      <label for="qtd-pessoas">Quantidade de pessoas</label>
+      <input type="number" id="qtd-pessoas" min="0" value="0">
+      <span class="total-inline">Total: <strong id="total-alimentacao">R$ 0,00</strong></span>
+    </div>
+  </section>
+
+  <!-- 3. AMBULÂNCIA E STAFF -->
+  <section class="card">
+    <h2>3. Equipe de Ambulância e Staff</h2>
+    <label class="checkbox-line">
+      <input type="checkbox" id="flag-ambulancia">
+      Incluir Equipe de Ambulância e Staff — R$ 46.362,50
+    </label>
+  </section>
+
+  <!-- 4. PISTA -->
+  <section class="card">
+    <h2>4. Pista</h2>
+    <label class="checkbox-line">
+      <input type="checkbox" id="flag-pista">
+      Incluir Pista — R$ 41.500,00
+    </label>
+  </section>
+
+  <!-- 5. PALESTRA -->
+  <section class="card">
+    <h2>5. Palestra</h2>
+    <label class="checkbox-line">
+      <input type="checkbox" id="flag-palestra">
+      Incluir Palestra — R$ 15.000,00
+    </label>
+  </section>
+
+  <!-- 6. DADOS DO CONTRATANTE -->
+  <section class="card">
+    <h2>6. Dados do Contratante <span class="opcional">(opcional)</span></h2>
+    <div class="grid-2">
+      <div class="field">
+        <label for="ct-contratante">Contratante</label>
+        <input type="text" id="ct-contratante" placeholder="Razão social">
+      </div>
+      <div class="field">
+        <label for="ct-fantasia">Nome Fantasia</label>
+        <input type="text" id="ct-fantasia" placeholder="Nome fantasia">
+      </div>
+      <div class="field">
+        <label for="ct-cnpj">CNPJ</label>
+        <input type="text" id="ct-cnpj" placeholder="00.000.000/0000-00">
+      </div>
+      <div class="field">
+        <label for="ct-representante">Representante Legal</label>
+        <input type="text" id="ct-representante" placeholder="Nome do representante">
+      </div>
+      <div class="field full">
+        <label for="ct-endereco">Endereço</label>
+        <input type="text" id="ct-endereco" placeholder="Endereço completo">
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. DADOS DA CONTRATADA -->
+  <section class="card">
+    <h2>7. Dados da Contratada</h2>
+    <div class="dados-fixos">
+      <p><strong>Contratada:</strong> Salão Super Carros Gramado</p>
+      <p><strong>CNPJ:</strong> 13.075.420/0001-89</p>
+      <p><strong>Banco:</strong> Bradesco</p>
+      <p><strong>Agência:</strong> 2656</p>
+      <p><strong>Conta Corrente:</strong> 27029-6</p>
+    </div>
+  </section>
+
+  <!-- TOTAL GERAL -->
+  <section class="card total-card">
+    <div class="total-geral-row">
+      <span>Valor Total do Orçamento</span>
+      <strong id="total-geral">R$ 0,00</strong>
+    </div>
+  </section>
+
+  <!-- AÇÕES -->
+  <section class="card acoes">
+    <button id="btn-gerar" class="btn-primary" disabled>GERAR ORÇAMENTO</button>
+    <p class="hint" id="hint-gerar">Selecione ao menos um item para liberar a geração do orçamento.</p>
+  </section>
+
+  <!-- PREVIEW DO DOCUMENTO -->
+  <section class="card" id="preview-wrapper" hidden>
+    <div class="preview-actions">
+      <button id="btn-pdf" class="btn-primary">Baixar PDF</button>
+      <button id="btn-novo" class="btn-secondary">Novo Orçamento</button>
+    </div>
+    <div id="documento-preview" class="documento"></div>
+  </section>
+
+</main>
+
+<!-- MODAL: perguntas antes de gerar -->
+<div id="modal-overlay" class="modal-overlay" hidden>
+  <div class="modal">
+    <h3>Antes de gerar o orçamento</h3>
+    <form id="form-modal">
+
+      <div class="field" id="campo-data-carros">
+        <label for="modal-data-carros">Data em que os carros ficarão disponíveis</label>
+        <input type="date" id="modal-data-carros">
+      </div>
+
+      <div class="field">
+        <label for="modal-pagamento">Forma de pagamento</label>
+        <textarea id="modal-pagamento" rows="3" placeholder="Descreva como será feito o pagamento (parcelas, datas, condições...)"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="modal-nome">Seu nome</label>
+        <input type="text" id="modal-nome" placeholder="Nome de quem está gerando o orçamento">
+      </div>
+
+      <div class="field">
+        <label for="modal-contato">Contato</label>
+        <input type="text" id="modal-contato" placeholder="Telefone ou e-mail">
+      </div>
+
+      <p class="erro" id="modal-erro" hidden></p>
+
+      <div class="modal-acoes">
+        <button type="button" id="modal-cancelar" class="btn-secondary">Cancelar</button>
+        <button type="submit" class="btn-primary">Gerar Documento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+/* ==========================================================
+   Interlagos SP — Gerador de Orçamento
+   ========================================================== */
+
+// ---------- Catálogo de produtos/serviços ----------
+const CARROS = [
+  { id: 'mclaren',    nome: 'McLaren',            precoCheio: 3980, precoNet: 3000 },
+  { id: 'supra',      nome: 'Toyota Supra',       precoCheio: 3980, precoNet: 3000 },
+  { id: 'gtr',        nome: 'GTR',                precoCheio: 3980, precoNet: 3000 },
+  { id: 'portofino',  nome: 'Ferrari Portofino',  precoCheio: 3980, precoNet: 3000 },
+  { id: 'lambo',      nome: 'Lamborghini',        precoCheio: 2980, precoNet: 1890 },
+  { id: 'california', nome: 'Ferrari California', precoCheio: 2980, precoNet: 1890 },
+  { id: 'modena',     nome: 'Ferrari Modena',     precoCheio: 1190, precoNet: null },
+];
+
+const ALIMENTACAO_UNIT = 283.00;
+const AMBULANCIA_VALOR = 46362.50;
+const PISTA_VALOR = 41500.00;
+const PALESTRA_VALOR = 15000.00;
+
+const CONTRATADA = {
+  nome: 'Salão Super Carros Gramado',
+  cnpj: '13.075.420/0001-89',
+  banco: 'Bradesco',
+  agencia: '2656',
+  contaCorrente: '27029-6',
+  cidade: 'Gramado',
+  uf: 'RS',
+};
+
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+// ---------- Estado ----------
+let state = {
+  carros: {},          // id -> { qtd, modo: 'cheio'|'net' }
+  pessoas: 0,
+  ambulancia: false,
+  pista: false,
+  palestra: false,
+};
+
+// ---------- Helpers ----------
+function formatBRL(v) {
+  return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDataBR(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function formatDataExtenso(dateObj) {
+  return `${String(dateObj.getDate()).padStart(2, '0')} de ${MESES[dateObj.getMonth()]} de ${dateObj.getFullYear()}`;
+}
+
+function semPontoFinal(str) {
+  return (str || '').trim().replace(/[.\s]+$/, '');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+// ---------- Renderização da tabela de carros ----------
+function renderTabelaCarros() {
+  const tbody = document.querySelector('#tabela-carros tbody');
+  tbody.innerHTML = '';
+
+  CARROS.forEach(carro => {
+    state.carros[carro.id] = state.carros[carro.id] || { qtd: 0, modo: 'cheio' };
+
+    const tr = document.createElement('tr');
+
+    const tdNome = document.createElement('td');
+    tdNome.textContent = carro.nome;
+    tr.appendChild(tdNome);
+
+    const tdPreco = document.createElement('td');
+    if (carro.precoNet !== null) {
+      const select = document.createElement('select');
+      select.dataset.carroId = carro.id;
+      select.className = 'select-modo';
+      select.innerHTML = `
+        <option value="cheio">Preço Cheio — ${formatBRL(carro.precoCheio)}</option>
+        <option value="net">Preço Net — ${formatBRL(carro.precoNet)}</option>
+      `;
+      select.value = state.carros[carro.id].modo;
+      select.addEventListener('change', onCarroChange);
+      tdPreco.appendChild(select);
+    } else {
+      tdPreco.textContent = formatBRL(carro.precoCheio);
+    }
+    tr.appendChild(tdPreco);
+
+    const tdQtd = document.createElement('td');
+    const inputQtd = document.createElement('input');
+    inputQtd.type = 'number';
+    inputQtd.min = '0';
+    inputQtd.value = state.carros[carro.id].qtd;
+    inputQtd.dataset.carroId = carro.id;
+    inputQtd.className = 'input-qtd';
+    inputQtd.addEventListener('input', onCarroChange);
+    tdQtd.appendChild(inputQtd);
+    tr.appendChild(tdQtd);
+
+    const tdTotal = document.createElement('td');
+    tdTotal.className = 'valor-total';
+    tdTotal.id = `total-${carro.id}`;
+    tdTotal.textContent = formatBRL(0);
+    tr.appendChild(tdTotal);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function precoUnitario(carro, modo) {
+  if (modo === 'net' && carro.precoNet !== null) return carro.precoNet;
+  return carro.precoCheio;
+}
+
+function onCarroChange(e) {
+  const id = e.target.dataset.carroId;
+  const carro = CARROS.find(c => c.id === id);
+
+  if (e.target.classList.contains('input-qtd')) {
+    let v = parseInt(e.target.value, 10);
+    if (isNaN(v) || v < 0) v = 0;
+    e.target.value = v;
+    state.carros[id].qtd = v;
+  } else if (e.target.classList.contains('select-modo')) {
+    state.carros[id].modo = e.target.value;
+  }
+
+  const qtd = state.carros[id].qtd;
+  const unit = precoUnitario(carro, state.carros[id].modo);
+  const total = qtd * unit;
+  document.getElementById(`total-${id}`).textContent = formatBRL(total);
+
+  recalcular();
+}
+
+// ---------- Cálculos gerais ----------
+function subtotalCarros() {
+  return CARROS.reduce((acc, carro) => {
+    const est = state.carros[carro.id] || { qtd: 0, modo: 'cheio' };
+    return acc + est.qtd * precoUnitario(carro, est.modo);
+  }, 0);
+}
+
+function totalAlimentacao() {
+  return state.pessoas * ALIMENTACAO_UNIT;
+}
+
+function totalGeral() {
+  let total = subtotalCarros() + totalAlimentacao();
+  if (state.ambulancia) total += AMBULANCIA_VALOR;
+  if (state.pista) total += PISTA_VALOR;
+  if (state.palestra) total += PALESTRA_VALOR;
+  return total;
+}
+
+function recalcular() {
+  const subCarros = subtotalCarros();
+  document.getElementById('subtotal-carros').textContent = formatBRL(subCarros);
+  document.getElementById('total-alimentacao').textContent = formatBRL(totalAlimentacao());
+
+  const total = totalGeral();
+  document.getElementById('total-geral').textContent = formatBRL(total);
+
+  const btn = document.getElementById('btn-gerar');
+  const hint = document.getElementById('hint-gerar');
+  if (total > 0) {
+    btn.disabled = false;
+    hint.textContent = 'Tudo pronto! Clique para gerar o orçamento.';
+  } else {
+    btn.disabled = true;
+    hint.textContent = 'Selecione ao menos um item para liberar a geração do orçamento.';
+  }
+}
+
+// ---------- Itens selecionados (para resumo e documento) ----------
+function getItensSelecionados() {
+  const itens = [];
+
+  CARROS.forEach(carro => {
+    const est = state.carros[carro.id];
+    if (est && est.qtd > 0) {
+      const unit = precoUnitario(carro, est.modo);
+      itens.push({
+        categoria: 'Carro',
+        nome: carro.nome,
+        qtd: est.qtd,
+        precoLabel: est.modo === 'net' && carro.precoNet !== null ? 'Preço Net' : 'Preço Cheio',
+        precoUnit: unit,
+        total: est.qtd * unit,
+      });
+    }
+  });
+
+  if (state.pessoas > 0) {
+    itens.push({
+      categoria: 'Alimentação',
+      nome: 'Alimentação (por pessoa)',
+      qtd: state.pessoas,
+      precoLabel: 'Valor por pessoa',
+      precoUnit: ALIMENTACAO_UNIT,
+      total: totalAlimentacao(),
+    });
+  }
+
+  if (state.ambulancia) {
+    itens.push({ categoria: 'Serviço', nome: 'Equipe de Ambulância e Staff', qtd: 1, precoLabel: 'Valor fixo', precoUnit: AMBULANCIA_VALOR, total: AMBULANCIA_VALOR });
+  }
+  if (state.pista) {
+    itens.push({ categoria: 'Serviço', nome: 'Pista', qtd: 1, precoLabel: 'Valor fixo', precoUnit: PISTA_VALOR, total: PISTA_VALOR });
+  }
+  if (state.palestra) {
+    itens.push({ categoria: 'Serviço', nome: 'Palestra', qtd: 1, precoLabel: 'Valor fixo', precoUnit: PALESTRA_VALOR, total: PALESTRA_VALOR });
+  }
+
+  return itens;
+}
+
+// ---------- Dados do formulário ----------
+function getDadosContratante() {
+  return {
+    contratante: document.getElementById('ct-contratante').value.trim(),
+    fantasia: document.getElementById('ct-fantasia').value.trim(),
+    cnpj: document.getElementById('ct-cnpj').value.trim(),
+    endereco: document.getElementById('ct-endereco').value.trim(),
+    representante: document.getElementById('ct-representante').value.trim(),
+  };
+}
+
+function contratantePreenchido(dados) {
+  return !!(dados.contratante || dados.fantasia || dados.cnpj || dados.endereco || dados.representante);
+}
+
+// ---------- Modal ----------
+const modalOverlay = document.getElementById('modal-overlay');
+const formModal = document.getElementById('form-modal');
+const campoDataCarros = document.getElementById('campo-data-carros');
+const modalErro = document.getElementById('modal-erro');
+
+function abrirModal() {
+  const temCarros = subtotalCarros() > 0;
+  campoDataCarros.style.display = temCarros ? '' : 'none';
+  document.getElementById('modal-data-carros').required = temCarros;
+  modalErro.hidden = true;
+  modalOverlay.hidden = false;
+}
+
+function fecharModal() {
+  modalOverlay.hidden = true;
+}
+
+document.getElementById('btn-gerar').addEventListener('click', abrirModal);
+document.getElementById('modal-cancelar').addEventListener('click', fecharModal);
+
+formModal.addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  const temCarros = subtotalCarros() > 0;
+  const dataCarros = document.getElementById('modal-data-carros').value;
+  const pagamento = document.getElementById('modal-pagamento').value.trim();
+  const nome = document.getElementById('modal-nome').value.trim();
+  const contato = document.getElementById('modal-contato').value.trim();
+
+  if ((temCarros && !dataCarros) || !pagamento || !nome || !contato) {
+    modalErro.textContent = 'Preencha todos os campos obrigatórios antes de continuar.';
+    modalErro.hidden = false;
+    return;
+  }
+
+  fecharModal();
+  gerarDocumento({ dataCarros, pagamento, nome, contato });
+});
+
+// ---------- Geração do documento ----------
+function gerarDocumento({ dataCarros, pagamento, nome, contato }) {
+  const dadosContratante = getDadosContratante();
+  const temContratante = contratantePreenchido(dadosContratante);
+  const itens = getItensSelecionados();
+  const total = totalGeral();
+  const temCarros = subtotalCarros() > 0;
+
+  const agora = new Date();
+  const dataGeracao = agora.toLocaleString('pt-BR');
+  const dataAssinaturaExtenso = formatDataExtenso(agora);
+  const dataCarrosBR = formatDataBR(dataCarros);
+
+  // ---- Bloco CONTRATANTE ----
+  let blocoContratante;
+  if (temContratante) {
+    blocoContratante = `
+      <div class="bloco-parte">
+        <p><strong>CONTRATANTE:</strong> ${escapeHtml(dadosContratante.contratante) || '—'}</p>
+        <p><strong>NOME FANTASIA:</strong> ${escapeHtml(dadosContratante.fantasia) || '—'}</p>
+        <p><strong>CNPJ:</strong> ${escapeHtml(dadosContratante.cnpj) || '—'}</p>
+        <p><strong>ENDEREÇO:</strong> ${escapeHtml(dadosContratante.endereco) || '—'}</p>
+        <p><strong>REPRESENTANTE LEGAL:</strong> ${escapeHtml(dadosContratante.representante) || '—'}</p>
+      </div>`;
+  } else {
+    blocoContratante = `
+      <div class="bloco-parte">
+        <p><strong>CONTRATANTE:</strong> _____________________________________________</p>
+        <p><strong>NOME FANTASIA:</strong> _____________________________________________</p>
+        <p><strong>CNPJ:</strong> _____________________________________________</p>
+        <p><strong>ENDEREÇO:</strong> _____________________________________________</p>
+        <p><strong>REPRESENTANTE LEGAL:</strong> _____________________________________________</p>
+      </div>`;
+  }
+
+  const blocoContratada = `
+    <div class="bloco-parte">
+      <p><strong>CONTRATADA:</strong> ${CONTRATADA.nome}</p>
+      <p><strong>CNPJ:</strong> ${CONTRATADA.cnpj}</p>
+      <p><strong>BANCO:</strong> ${CONTRATADA.banco}</p>
+      <p><strong>AGÊNCIA:</strong> ${CONTRATADA.agencia}</p>
+      <p><strong>CONTA CORRENTE:</strong> ${CONTRATADA.contaCorrente}</p>
+    </div>`;
+
+  // ---- Tabela resumo ----
+  const linhasResumo = itens.map(it => `
+    <tr>
+      <td>${escapeHtml(it.nome)}</td>
+      <td>${it.qtd}</td>
+      <td>${escapeHtml(it.precoLabel)}: ${formatBRL(it.precoUnit)}</td>
+      <td class="num">${formatBRL(it.total)}</td>
+    </tr>`).join('');
+
+  const tabelaResumo = `
+    <table class="doc-resumo">
+      <thead>
+        <tr><th>Item</th><th>Quantidade</th><th>Preço utilizado</th><th>Valor total</th></tr>
+      </thead>
+      <tbody>${linhasResumo}</tbody>
+      <tfoot>
+        <tr><td colspan="3">VALOR TOTAL DO ORÇAMENTO</td><td class="num">${formatBRL(total)}</td></tr>
+      </tfoot>
+    </table>`;
+
+  // ---- Cláusula Primeira ----
+  const carrosSelecionados = itens.filter(it => it.categoria === 'Carro');
+  let clausula1 = `<p>O presente Contrato tem por objeto a prestação, pela CONTRATADA à CONTRATANTE, dos produtos e serviços relacionados no quadro-resumo acima, compreendendo:</p>`;
+
+  let numeral = 1;
+  if (carrosSelecionados.length > 0) {
+    const listaCarros = carrosSelecionados.map(c => `${String(c.qtd).padStart(2, '0')} unidade(s) de ${escapeHtml(c.nome)};`).join('<br>');
+    clausula1 += `
+      <p>(${romano(numeral++)}) a locação dos seguintes veículos:</p>
+      <p>${listaCarros}</p>
+      <p>Os carros ficarão disponíveis no dia ${dataCarrosBR || 'XX/XX/XXXX'}, no Autódromo José Carlos Pace, localizado na Avenida Senador Teotônio Vilela, nº 261, Interlagos, São Paulo – SP, CEP 04801-010, para realização de test-drives, onde a(s) pessoa(s) indicada(s) pela CONTRATANTE irá(ão) pilotar o(s) veículo(s) com a instrução e presença de instrutor indicado pela CONTRATADA, que passará um treinamento para o(s) indicado(s).</p>
+      <p>Os indicados devem possuir Carteira Nacional de Habilitação (CNH) válida.</p>
+      <p>Durante os passeios, a CONTRATANTE não terá responsabilidade alguma sobre os veículos, ficando a relação jurídica sobre este tema apenas entre a CONTRATADA e os condutores dos veículos, os quais assinarão termo de responsabilidade.</p>
+      <p>Se ocorrer alguma falha mecânica ou acidente em algum dos veículos durante os passeios, os passeios que ainda estiverem pendentes de realização serão efetuados somente com os demais veículos disponíveis.</p>
+      <p>Se ocorrerem avarias mecânicas ou decorrentes de colisão em período anterior à presente locação, a CONTRATADA deverá substituir o(s) veículo(s) por outro da mesma categoria.</p>`;
+  }
+  if (state.pessoas > 0) {
+    clausula1 += `<p>(${romano(numeral++)}) o fornecimento de alimentação para ${state.pessoas} pessoa(s), ao valor unitário de ${formatBRL(ALIMENTACAO_UNIT)} por pessoa;</p>`;
+  }
+  if (state.ambulancia) {
+    clausula1 += `<p>(${romano(numeral++)}) a disponibilização de equipe de ambulância e staff para o evento;</p>`;
+  }
+  if (state.pista) {
+    clausula1 += `<p>(${romano(numeral++)}) a utilização de pista para o evento;</p>`;
+  }
+  if (state.palestra) {
+    clausula1 += `<p>(${romano(numeral++)}) a realização de palestra durante o evento;</p>`;
+  }
+
+  // ---- Cláusula Segunda ----
+  const clausula2 = `
+    <p>2.1 O presente Contrato vigorará da data de sua assinatura até ${temCarros ? `o dia ${dataCarrosBR}` : 'a data de realização do evento'}, podendo ser renovado mediante novo acordo entre as Partes.</p>`;
+
+  // ---- Cláusula Terceira ----
+  const clausula3 = `
+    <p>3.1 Pelos produtos e serviços especificados na Cláusula Primeira, a CONTRATANTE pagará à CONTRATADA, incluindo todos os impostos e encargos incidentes, a importância total bruta de ${formatBRL(total)}, mediante depósito na conta corrente ${CONTRATADA.contaCorrente}, Agência ${CONTRATADA.agencia}, ${CONTRATADA.banco}, de titularidade da CONTRATADA, da seguinte forma: ${escapeHtml(semPontoFinal(pagamento))}.</p>
+    <p>A não realização, total ou parcial, dos serviços contratados por culpa ou opção da CONTRATANTE ou de pessoa por ela indicada não implicará em abatimento do valor acordado.</p>
+    <p>3.2 Todas as despesas incorridas pela CONTRATADA para a prestação dos serviços serão de sua inteira e exclusiva responsabilidade.</p>
+    <p>3.3 A CONTRATADA deverá enviar, para a CONTRATANTE, nota fiscal para pagamento, ${dadosContratante.endereco ? `no seguinte endereço: ${escapeHtml(dadosContratante.endereco)}.` : 'no endereço a ser indicado pela CONTRATANTE.'}</p>
+    <p>É de inteira responsabilidade da CONTRATADA o pagamento e recolhimento de todos os tributos, obrigações tributárias, encargos acessórios, contribuições parafiscais, taxas e impostos incidentes ou decorrentes do presente Contrato e das atividades inerentes à sua execução, devendo os pagamentos gerados pelo Contrato ser faturados com os tributos incidentes inclusos.</p>`;
+
+  // ---- Cláusula Quarta ----
+  const clausula4 = `
+    <p>4.1 A CONTRATANTE obriga-se a:</p>
+    <p>Fornecer à CONTRATADA toda informação solicitada, indispensável à prestação dos serviços objeto deste Contrato;</p>
+    <p>Permitir e assegurar o acesso de representantes, empregados e prepostos da CONTRATADA aos locais onde os serviços serão prestados; e</p>
+    <p>Efetivar os pagamentos devidos à CONTRATADA nos termos deste instrumento.</p>
+    <p>4.2 A CONTRATADA obriga-se a:</p>
+    <p>(a) Conduzir a execução dos serviços contratados de acordo com as melhores técnicas profissionais, com estrita observância às leis vigentes e ao estabelecido no presente Contrato;</p>
+    <p>(b) Ler e dar conhecimento a seus empregados, prepostos e representantes legais das instruções da CONTRATANTE, comprometendo-se a segui-las e zelando pela sua fiel observância;</p>
+    <p>(c) Respeitar e zelar pela observância, por meio de seus empregados, prepostos e representantes, das normas internas de segurança, bem como das normas de medicina e higiene do trabalho e regras administrativas e disciplinares estabelecidas em lei, responsabilizando-se por eventuais prejuízos causados por seus empregados, cooperados, administradores, prepostos, subcontratados e representantes no desempenho de suas atividades;</p>
+    <p>(d) Possuir todos os registros e licenças necessárias ao desempenho de suas atividades e execução deste Contrato;</p>
+    <p>Afastar todo e qualquer empregado ou preposto seu que, a juízo da CONTRATANTE, vier a ser considerado inapto ou desqualificado para o exercício das atividades ora contratadas, obrigando-se a substituí-lo por outro profissional com a qualificação técnica exigida, no prazo de 5 (cinco) dias após a solicitação da CONTRATANTE;</p>
+    <p>Cumprir fielmente as exigências legais, fiscais, previdenciárias, trabalhistas e acidentárias relacionadas à prestação dos serviços objeto deste Contrato;</p>
+    <p>Não subcontratar, ceder ou transferir qualquer parte ou obrigação do Contrato sem a prévia autorização, por escrito, da CONTRATANTE.</p>`;
+
+  // ---- Cláusula Quinta ----
+  const clausula5 = `
+    <p>5.1 O presente Contrato somente poderá ser rescindido de imediato por qualquer das Partes, a seu exclusivo critério, em razão do inadimplemento total ou parcial de qualquer obrigação estabelecida neste Contrato que não seja sanada no prazo de 10 (dez) dias a contar do recebimento de notificação pela Parte prejudicada à Parte infratora, caso seja possível o saneamento, ou, ainda, na hipótese de requerimento de falência, recuperação judicial ou liquidação judicial ou extrajudicial, ou estado de insolvência pública e notória de qualquer das Partes.</p>
+    <p>5.2 No caso de rescisão deste Contrato nos termos acima, a Parte infratora pagará à Parte inocente multa rescisória no montante equivalente a 20% (vinte por cento) da remuneração recebida pelo serviço objeto da rescisão, devendo ainda indenizar a Parte inocente por suas perdas e danos.</p>`;
+
+  // ---- Cláusula Sexta ----
+  const clausula6 = `
+    <p>6.1 A CONTRATADA reconhece e declara que a prestação dos serviços contratados não constitui relação de emprego entre, de um lado, os empregados, representantes, colaboradores, cooperados e/ou sócios da CONTRATADA e, de outro lado, a CONTRATANTE, assumindo a CONTRATADA total responsabilidade por todas as obrigações trabalhistas, previdenciárias e/ou relacionadas a acidentes de trabalho de seus empregados, representantes, colaboradores e/ou sócios.</p>
+    <p>6.2 Durante a vigência do presente Contrato, e pelo período de cinco (5) anos após o seu término ou rescisão, a CONTRATADA deverá manter um conjunto completo e preciso de arquivos, livros e registros relativos ao cálculo e pagamento de todos os tributos, obrigações tributárias e encargos incidentes ou decorrentes do presente Contrato.</p>
+    <p>6.3 Toda e qualquer comunicação entre as Partes relativa a este Contrato deverá ser feita por escrito e enviada aos endereços indicados neste instrumento.</p>
+    <p>6.4 O fato de uma das Partes não exercer ou exigir qualquer direito conferido a ela neste Contrato não deverá ser considerado renúncia a tal direito ou a qualquer outro.</p>
+    <p>6.5 Quando, em virtude de força maior ou caso fortuito, o cumprimento de quaisquer das obrigações firmadas neste Contrato tornar-se impossível, deverá a Parte inadimplente comunicar e justificar, por escrito, à outra Parte o motivo do não cumprimento, no prazo máximo de 05 (cinco) dias após a ocorrência dos fatos extraordinários.</p>
+    <p>6.6 As obrigações oriundas deste Contrato vinculam as Partes, seus sucessores e cessionários a qualquer título.</p>
+    <p>6.7 Este Contrato substitui qualquer acordo prévio, escrito ou verbal, feito entre as Partes com relação aos assuntos aqui contemplados, constituindo o acordo integral entre elas.</p>
+    <p>6.8 As Partes elegem o Foro da Comarca de ${CONTRATADA.cidade} - ${CONTRATADA.uf}, para dirimir quaisquer controvérsias decorrentes da aplicação ou execução do presente Contrato.</p>`;
+
+  const nomeAssinaturaContratante = dadosContratante.fantasia || dadosContratante.contratante || '';
+
+  const documentoHTML = `
+    <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)} — Gerado em ${dataGeracao}</div>
+    <h2 class="doc-titulo">Contrato de Locação de Veículos e Prestação de Serviços<br>Drives Interlagos</h2>
+
+    <p>Pelo presente instrumento particular, de um lado,</p>
+    ${blocoContratante}
+    <p>e de outro lado,</p>
+    ${blocoContratada}
+    <p>a CONTRATANTE e a CONTRATADA também doravante indistintamente referidos como "Parte" ou "Partes".</p>
+    <p>As Partes têm entre si, justo e acordado, celebrar o presente Contrato de Locação de Veículos e Prestação de Serviços (o "Contrato"), que será regido pelos seguintes termos e condições:</p>
+
+    <h3 class="doc-clausula">Resumo do Orçamento</h3>
+    ${tabelaResumo}
+
+    <h3 class="doc-clausula">Cláusula Primeira – Do Objeto</h3>
+    ${clausula1}
+
+    <h3 class="doc-clausula">Cláusula Segunda – Do Prazo</h3>
+    ${clausula2}
+
+    <h3 class="doc-clausula">Cláusula Terceira – Da Remuneração</h3>
+    ${clausula3}
+
+    <h3 class="doc-clausula">Cláusula Quarta – Das Obrigações das Partes</h3>
+    ${clausula4}
+
+    <h3 class="doc-clausula">Cláusula Quinta – Da Rescisão</h3>
+    ${clausula5}
+
+    <h3 class="doc-clausula">Cláusula Sexta – Das Cláusulas Diversas</h3>
+    ${clausula6}
+
+    <p>E por estarem assim justas e contratadas, as Partes assinam o presente Contrato em 02 (duas) vias de igual teor e forma, na presença das testemunhas abaixo assinadas.</p>
+    <p>${CONTRATADA.cidade}, ${dataAssinaturaExtenso}.</p>
+
+    <div class="assinaturas">
+      <div class="linha-assinatura">
+        <div class="linha"></div>
+        <div>CONTRATANTE${nomeAssinaturaContratante ? ' — ' + escapeHtml(nomeAssinaturaContratante) : ''}</div>
+      </div>
+      <div class="linha-assinatura">
+        <div class="linha"></div>
+        <div>${CONTRATADA.nome}<br>Por: _____________________  Cargo: _____________________</div>
+      </div>
+      <div class="testemunhas">
+        <div class="test">
+          <div class="linha"></div>
+          <div>Nome:</div>
+          <div>CPF:</div>
+        </div>
+        <div class="test">
+          <div class="linha"></div>
+          <div>Nome:</div>
+          <div>CPF:</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const preview = document.getElementById('documento-preview');
+  preview.innerHTML = documentoHTML;
+
+  const wrapper = document.getElementById('preview-wrapper');
+  wrapper.hidden = false;
+  wrapper.scrollIntoView({ behavior: 'smooth' });
+
+  // guarda nome para o nome do arquivo PDF
+  wrapper.dataset.nomeArquivo = sanitizeFileName(dadosContratante.fantasia || dadosContratante.contratante || nome);
+}
+
+function romano(n) {
+  // numeração simples em algarismos romanos para até ~10 itens
+  const map = ['i','ii','iii','iv','v','vi','vii','viii','ix','x'];
+  return map[n - 1] || n;
+}
+
+function sanitizeFileName(str) {
+  return (str || 'orcamento')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'orcamento';
+}
+
+// ---------- PDF ----------
+// Gera o PDF usando a função nativa de impressão do navegador (Salvar como PDF),
+// o que produz um documento com texto real (selecionável e pesquisável), em vez
+// de uma imagem — mais adequado para um contrato.
+document.getElementById('btn-pdf').addEventListener('click', function () {
+  const wrapper = document.getElementById('preview-wrapper');
+  const hoje = new Date();
+  const carimbo = `${hoje.getFullYear()}${String(hoje.getMonth() + 1).padStart(2, '0')}${String(hoje.getDate()).padStart(2, '0')}_${String(hoje.getHours()).padStart(2, '0')}${String(hoje.getMinutes()).padStart(2, '0')}`;
+  const nomeArquivo = `Orcamento_${wrapper.dataset.nomeArquivo || 'cliente'}_${carimbo}`;
+
+  const tituloOriginal = document.title;
+  document.title = nomeArquivo; // sugestão de nome no diálogo "Salvar como PDF"
+
+  const restaurarTitulo = () => { document.title = tituloOriginal; };
+  window.addEventListener('afterprint', restaurarTitulo, { once: true });
+
+  window.print();
+});
+
+// ---------- Novo orçamento ----------
+document.getElementById('btn-novo').addEventListener('click', function () {
+  document.getElementById('preview-wrapper').hidden = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ---------- Listeners gerais ----------
+document.getElementById('qtd-pessoas').addEventListener('input', function (e) {
+  let v = parseInt(e.target.value, 10);
+  if (isNaN(v) || v < 0) v = 0;
+  e.target.value = v;
+  state.pessoas = v;
+  recalcular();
+});
+
+document.getElementById('flag-ambulancia').addEventListener('change', function (e) {
+  state.ambulancia = e.target.checked;
+  recalcular();
+});
+document.getElementById('flag-pista').addEventListener('change', function (e) {
+  state.pista = e.target.checked;
+  recalcular();
+});
+document.getElementById('flag-palestra').addEventListener('change', function (e) {
+  state.palestra = e.target.checked;
+  recalcular();
+});
+
+// ---------- Init ----------
+renderTabelaCarros();
+recalcular();
+
+</script>
+</body>
+</html>
