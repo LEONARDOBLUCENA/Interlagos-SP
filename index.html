@@ -191,10 +191,33 @@ button {
   font-size: 11px;
   color: #666;
   text-align: right;
-  border-bottom: 1px solid #ccc;
   padding-bottom: 8px;
-  margin-bottom: 16px;
   font-family: Arial, sans-serif;
+}
+.documento .doc-tag {
+  display: inline-block;
+  float: right;
+  clear: right;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+.documento .doc-tag-orcamento {
+  background: #fbeeba;
+  color: #7a5b00;
+  border: 1px solid #e6c766;
+}
+.documento .doc-tag-contrato {
+  background: #dcefe1;
+  color: #1f6b3a;
+  border: 1px solid #a9d8b6;
+}
+.documento .doc-titulo {
+  clear: both;
 }
 .documento .bloco-parte {
   border: 1px solid #999;
@@ -411,7 +434,8 @@ button {
   <!-- PREVIEW DO DOCUMENTO -->
   <section class="card" id="preview-wrapper" hidden>
     <div class="preview-actions">
-      <button id="btn-pdf" class="btn-primary">Baixar PDF</button>
+      <button id="btn-gerar-contrato" class="btn-primary">Gerar Contrato</button>
+      <button id="btn-pdf" class="btn-secondary">Baixar PDF</button>
       <button id="btn-novo" class="btn-secondary">Novo Orçamento</button>
     </div>
     <div id="documento-preview" class="documento"></div>
@@ -419,29 +443,19 @@ button {
 
 </main>
 
-<!-- MODAL: perguntas antes de gerar -->
+<!-- MODAL 1: perguntas antes de gerar o ORÇAMENTO -->
 <div id="modal-overlay" class="modal-overlay" hidden>
   <div class="modal">
     <h3>Antes de gerar o orçamento</h3>
     <form id="form-modal">
 
-      <div class="field" id="campo-data-carros">
-        <label for="modal-data-carros">Data em que os carros ficarão disponíveis</label>
-        <input type="date" id="modal-data-carros">
-      </div>
-
       <div class="field">
-        <label for="modal-pagamento">Forma de pagamento</label>
-        <textarea id="modal-pagamento" rows="3" placeholder="Descreva como será feito o pagamento (parcelas, datas, condições...)"></textarea>
-      </div>
-
-      <div class="field">
-        <label for="modal-nome">Seu nome</label>
+        <label for="modal-nome">Nome Orçamento</label>
         <input type="text" id="modal-nome" placeholder="Nome de quem está gerando o orçamento">
       </div>
 
       <div class="field">
-        <label for="modal-contato">Contato</label>
+        <label for="modal-contato">Contato Orçamento</label>
         <input type="text" id="modal-contato" placeholder="Telefone ou e-mail">
       </div>
 
@@ -449,7 +463,33 @@ button {
 
       <div class="modal-acoes">
         <button type="button" id="modal-cancelar" class="btn-secondary">Cancelar</button>
-        <button type="submit" class="btn-primary">Gerar Documento</button>
+        <button type="submit" class="btn-primary">Gerar Orçamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL 2: perguntas antes de gerar o CONTRATO -->
+<div id="modal-contrato-overlay" class="modal-overlay" hidden>
+  <div class="modal">
+    <h3>Antes de gerar o contrato</h3>
+    <form id="form-modal-contrato">
+
+      <div class="field" id="campo-data-carros-contrato">
+        <label for="contrato-data-carros">Data em que os carros ficarão disponíveis</label>
+        <input type="date" id="contrato-data-carros">
+      </div>
+
+      <div class="field">
+        <label for="contrato-pagamento">Forma de pagamento</label>
+        <textarea id="contrato-pagamento" rows="3" placeholder="Descreva como será feito o pagamento (parcelas, datas, condições...)"></textarea>
+      </div>
+
+      <p class="erro" id="modal-contrato-erro" hidden></p>
+
+      <div class="modal-acoes">
+        <button type="button" id="modal-contrato-cancelar" class="btn-secondary">Cancelar</button>
+        <button type="submit" class="btn-primary">Gerar Contrato</button>
       </div>
     </form>
   </div>
@@ -495,6 +535,8 @@ let state = {
   ambulancia: false,
   pista: false,
   palestra: false,
+  docMeta: { nome: '', contato: '' },   // capturado ao gerar o orçamento, reaproveitado no contrato
+  ultimoContrato: { dataCarros: '', pagamento: '' }, // para pré-preencher o modal do contrato
 };
 
 // ---------- Helpers ----------
@@ -697,16 +739,12 @@ function contratantePreenchido(dados) {
   return !!(dados.contratante || dados.fantasia || dados.cnpj || dados.endereco || dados.representante);
 }
 
-// ---------- Modal ----------
+// ---------- Modal 1: Gerar Orçamento (pede Nome/Contato) ----------
 const modalOverlay = document.getElementById('modal-overlay');
 const formModal = document.getElementById('form-modal');
-const campoDataCarros = document.getElementById('campo-data-carros');
 const modalErro = document.getElementById('modal-erro');
 
 function abrirModal() {
-  const temCarros = subtotalCarros() > 0;
-  campoDataCarros.style.display = temCarros ? '' : 'none';
-  document.getElementById('modal-data-carros').required = temCarros;
   modalErro.hidden = true;
   modalOverlay.hidden = false;
 }
@@ -721,29 +759,75 @@ document.getElementById('modal-cancelar').addEventListener('click', fecharModal)
 formModal.addEventListener('submit', function (e) {
   e.preventDefault();
 
-  const temCarros = subtotalCarros() > 0;
-  const dataCarros = document.getElementById('modal-data-carros').value;
-  const pagamento = document.getElementById('modal-pagamento').value.trim();
   const nome = document.getElementById('modal-nome').value.trim();
   const contato = document.getElementById('modal-contato').value.trim();
 
-  if ((temCarros && !dataCarros) || !pagamento || !nome || !contato) {
-    modalErro.textContent = 'Preencha todos os campos obrigatórios antes de continuar.';
+  if (!nome || !contato) {
+    modalErro.textContent = 'Preencha o Nome e o Contato do Orçamento antes de continuar.';
     modalErro.hidden = false;
     return;
   }
 
+  state.docMeta = { nome, contato };
   fecharModal();
-  gerarDocumento({ dataCarros, pagamento, nome, contato });
+  gerarDocumento('orcamento', {});
+});
+
+// ---------- Modal 2: Gerar Contrato (pede Data dos carros / Forma de pagamento) ----------
+const modalContratoOverlay = document.getElementById('modal-contrato-overlay');
+const formModalContrato = document.getElementById('form-modal-contrato');
+const campoDataCarrosContrato = document.getElementById('campo-data-carros-contrato');
+const modalContratoErro = document.getElementById('modal-contrato-erro');
+
+function abrirModalContrato() {
+  const temCarros = subtotalCarros() > 0;
+  campoDataCarrosContrato.style.display = temCarros ? '' : 'none';
+  document.getElementById('contrato-data-carros').required = temCarros;
+
+  // pré-preenche com o que foi informado da última vez, se houver
+  document.getElementById('contrato-data-carros').value = state.ultimoContrato.dataCarros || '';
+  document.getElementById('contrato-pagamento').value = state.ultimoContrato.pagamento || '';
+
+  modalContratoErro.hidden = true;
+  modalContratoOverlay.hidden = false;
+}
+
+function fecharModalContrato() {
+  modalContratoOverlay.hidden = true;
+}
+
+document.getElementById('btn-gerar-contrato').addEventListener('click', abrirModalContrato);
+document.getElementById('modal-contrato-cancelar').addEventListener('click', fecharModalContrato);
+
+formModalContrato.addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  const temCarros = subtotalCarros() > 0;
+  const dataCarros = document.getElementById('contrato-data-carros').value;
+  const pagamento = document.getElementById('contrato-pagamento').value.trim();
+
+  if ((temCarros && !dataCarros) || !pagamento) {
+    modalContratoErro.textContent = 'Preencha todos os campos obrigatórios antes de continuar.';
+    modalContratoErro.hidden = false;
+    return;
+  }
+
+  state.ultimoContrato = { dataCarros, pagamento };
+  fecharModalContrato();
+  gerarDocumento('contrato', { dataCarros, pagamento });
 });
 
 // ---------- Geração do documento ----------
-function gerarDocumento({ dataCarros, pagamento, nome, contato }) {
+// tipo: 'orcamento' (sem data dos carros / forma de pagamento) ou 'contrato' (com ambos)
+function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
+  const { nome, contato } = state.docMeta;
   const dadosContratante = getDadosContratante();
   const temContratante = contratantePreenchido(dadosContratante);
   const itens = getItensSelecionados();
   const total = totalGeral();
   const temCarros = subtotalCarros() > 0;
+  const temData = !!dataCarros;
+  const temPagamento = !!pagamento;
 
   const agora = new Date();
   const dataGeracao = agora.toLocaleString('pt-BR');
@@ -810,12 +894,18 @@ function gerarDocumento({ dataCarros, pagamento, nome, contato }) {
     const listaCarros = carrosSelecionados.map(c => `${String(c.qtd).padStart(2, '0')} unidade(s) de ${escapeHtml(c.nome)};`).join('<br>');
     clausula1 += `
       <p>(${romano(numeral++)}) a locação dos seguintes veículos:</p>
-      <p>${listaCarros}</p>
-      <p>Os carros ficarão disponíveis no dia ${dataCarrosBR || 'XX/XX/XXXX'}, no Autódromo José Carlos Pace, localizado na Avenida Senador Teotônio Vilela, nº 261, Interlagos, São Paulo – SP, CEP 04801-010, para realização de test-drives, onde a(s) pessoa(s) indicada(s) pela CONTRATANTE irá(ão) pilotar o(s) veículo(s) com a instrução e presença de instrutor indicado pela CONTRATADA, que passará um treinamento para o(s) indicado(s).</p>
+      <p>${listaCarros}</p>`;
+    if (temData) {
+      clausula1 += `
+      <p>Os carros ficarão disponíveis no dia ${dataCarrosBR}, no Autódromo José Carlos Pace, localizado na Avenida Senador Teotônio Vilela, nº 261, Interlagos, São Paulo – SP, CEP 04801-010, para realização de test-drives, onde a(s) pessoa(s) indicada(s) pela CONTRATANTE irá(ão) pilotar o(s) veículo(s) com a instrução e presença de instrutor indicado pela CONTRATADA, que passará um treinamento para o(s) indicado(s).</p>
       <p>Os indicados devem possuir Carteira Nacional de Habilitação (CNH) válida.</p>
       <p>Durante os passeios, a CONTRATANTE não terá responsabilidade alguma sobre os veículos, ficando a relação jurídica sobre este tema apenas entre a CONTRATADA e os condutores dos veículos, os quais assinarão termo de responsabilidade.</p>
       <p>Se ocorrer alguma falha mecânica ou acidente em algum dos veículos durante os passeios, os passeios que ainda estiverem pendentes de realização serão efetuados somente com os demais veículos disponíveis.</p>
       <p>Se ocorrerem avarias mecânicas ou decorrentes de colisão em período anterior à presente locação, a CONTRATADA deverá substituir o(s) veículo(s) por outro da mesma categoria.</p>`;
+    } else {
+      clausula1 += `
+      <p>A data de disponibilização dos carros será informada no Contrato.</p>`;
+    }
   }
   if (state.pessoas > 0) {
     clausula1 += `<p>(${romano(numeral++)}) o fornecimento de alimentação para ${state.pessoas} pessoa(s), ao valor unitário de ${formatBRL(ALIMENTACAO_UNIT)} por pessoa;</p>`;
@@ -831,12 +921,23 @@ function gerarDocumento({ dataCarros, pagamento, nome, contato }) {
   }
 
   // ---- Cláusula Segunda ----
+  let prazoTexto;
+  if (temData) {
+    prazoTexto = `o dia ${dataCarrosBR}`;
+  } else if (temCarros) {
+    prazoTexto = 'a data de disponibilização dos carros, a ser definida no Contrato';
+  } else {
+    prazoTexto = 'a data de realização do evento';
+  }
   const clausula2 = `
-    <p>2.1 O presente Contrato vigorará da data de sua assinatura até ${temCarros ? `o dia ${dataCarrosBR}` : 'a data de realização do evento'}, podendo ser renovado mediante novo acordo entre as Partes.</p>`;
+    <p>2.1 O presente Contrato vigorará da data de sua assinatura até ${prazoTexto}, podendo ser renovado mediante novo acordo entre as Partes.</p>`;
 
   // ---- Cláusula Terceira ----
+  const formaPagamentoTexto = temPagamento
+    ? `, da seguinte forma: ${escapeHtml(semPontoFinal(pagamento))}.`
+    : `, cuja forma de pagamento será definida no Contrato.`;
   const clausula3 = `
-    <p>3.1 Pelos produtos e serviços especificados na Cláusula Primeira, a CONTRATANTE pagará à CONTRATADA, incluindo todos os impostos e encargos incidentes, a importância total bruta de ${formatBRL(total)}, mediante depósito na conta corrente ${CONTRATADA.contaCorrente}, Agência ${CONTRATADA.agencia}, ${CONTRATADA.banco}, de titularidade da CONTRATADA, da seguinte forma: ${escapeHtml(semPontoFinal(pagamento))}.</p>
+    <p>3.1 Pelos produtos e serviços especificados na Cláusula Primeira, a CONTRATANTE pagará à CONTRATADA, incluindo todos os impostos e encargos incidentes, a importância total bruta de ${formatBRL(total)}, mediante depósito na conta corrente ${CONTRATADA.contaCorrente}, Agência ${CONTRATADA.agencia}, ${CONTRATADA.banco}, de titularidade da CONTRATADA${formaPagamentoTexto}</p>
     <p>A não realização, total ou parcial, dos serviços contratados por culpa ou opção da CONTRATANTE ou de pessoa por ela indicada não implicará em abatimento do valor acordado.</p>
     <p>3.2 Todas as despesas incorridas pela CONTRATADA para a prestação dos serviços serão de sua inteira e exclusiva responsabilidade.</p>
     <p>3.3 A CONTRATADA deverá enviar, para a CONTRATANTE, nota fiscal para pagamento, ${dadosContratante.endereco ? `no seguinte endereço: ${escapeHtml(dadosContratante.endereco)}.` : 'no endereço a ser indicado pela CONTRATANTE.'}</p>
@@ -877,6 +978,7 @@ function gerarDocumento({ dataCarros, pagamento, nome, contato }) {
 
   const documentoHTML = `
     <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)} — Gerado em ${dataGeracao}</div>
+    <div class="doc-tag doc-tag-${tipo}">${tipo === 'contrato' ? 'CONTRATO' : 'ORÇAMENTO — documento preliminar, sujeito à geração do Contrato'}</div>
     <h2 class="doc-titulo">Contrato de Locação de Veículos e Prestação de Serviços<br>Drives Interlagos</h2>
 
     <p>Pelo presente instrumento particular, de um lado,</p>
@@ -941,8 +1043,9 @@ function gerarDocumento({ dataCarros, pagamento, nome, contato }) {
   wrapper.hidden = false;
   wrapper.scrollIntoView({ behavior: 'smooth' });
 
-  // guarda nome para o nome do arquivo PDF
+  // guarda dados para o nome do arquivo PDF e para o próximo passo (gerar contrato)
   wrapper.dataset.nomeArquivo = sanitizeFileName(dadosContratante.fantasia || dadosContratante.contratante || nome);
+  wrapper.dataset.tipoDocumento = tipo;
 }
 
 function romano(n) {
@@ -966,7 +1069,8 @@ document.getElementById('btn-pdf').addEventListener('click', function () {
   const wrapper = document.getElementById('preview-wrapper');
   const hoje = new Date();
   const carimbo = `${hoje.getFullYear()}${String(hoje.getMonth() + 1).padStart(2, '0')}${String(hoje.getDate()).padStart(2, '0')}_${String(hoje.getHours()).padStart(2, '0')}${String(hoje.getMinutes()).padStart(2, '0')}`;
-  const nomeArquivo = `Orcamento_${wrapper.dataset.nomeArquivo || 'cliente'}_${carimbo}`;
+  const prefixo = wrapper.dataset.tipoDocumento === 'contrato' ? 'Contrato' : 'Orcamento';
+  const nomeArquivo = `${prefixo}_${wrapper.dataset.nomeArquivo || 'cliente'}_${carimbo}`;
 
   const tituloOriginal = document.title;
   document.title = nomeArquivo; // sugestão de nome no diálogo "Salvar como PDF"
