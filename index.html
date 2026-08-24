@@ -835,26 +835,15 @@ function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
   const dataCarrosBR = formatDataBR(dataCarros);
 
   // ---- Bloco CONTRATANTE ----
-  let blocoContratante;
-  if (temContratante) {
-    blocoContratante = `
+  // Só aparece no quadro-resumo se algum dado do Contratante tiver sido preenchido.
+  const blocoContratante = temContratante ? `
       <div class="bloco-parte">
         <p><strong>CONTRATANTE:</strong> ${escapeHtml(dadosContratante.contratante) || '—'}</p>
         <p><strong>NOME FANTASIA:</strong> ${escapeHtml(dadosContratante.fantasia) || '—'}</p>
         <p><strong>CNPJ:</strong> ${escapeHtml(dadosContratante.cnpj) || '—'}</p>
         <p><strong>ENDEREÇO:</strong> ${escapeHtml(dadosContratante.endereco) || '—'}</p>
         <p><strong>REPRESENTANTE LEGAL:</strong> ${escapeHtml(dadosContratante.representante) || '—'}</p>
-      </div>`;
-  } else {
-    blocoContratante = `
-      <div class="bloco-parte">
-        <p><strong>CONTRATANTE:</strong> _____________________________________________</p>
-        <p><strong>NOME FANTASIA:</strong> _____________________________________________</p>
-        <p><strong>CNPJ:</strong> _____________________________________________</p>
-        <p><strong>ENDEREÇO:</strong> _____________________________________________</p>
-        <p><strong>REPRESENTANTE LEGAL:</strong> _____________________________________________</p>
-      </div>`;
-  }
+      </div>` : '';
 
   const blocoContratada = `
     <div class="bloco-parte">
@@ -981,10 +970,13 @@ function gerarDocumento(tipo, { dataCarros, pagamento } = {}) {
     <div class="doc-tag doc-tag-${tipo}">${tipo === 'contrato' ? 'CONTRATO' : 'ORÇAMENTO — documento preliminar, sujeito à geração do Contrato'}</div>
     <h2 class="doc-titulo">Contrato de Locação de Veículos e Prestação de Serviços<br>Drives Interlagos</h2>
 
+    ${temContratante ? `
     <p>Pelo presente instrumento particular, de um lado,</p>
     ${blocoContratante}
     <p>e de outro lado,</p>
-    ${blocoContratada}
+    ${blocoContratada}` : `
+    <p>Pelo presente instrumento particular,</p>
+    ${blocoContratada}`}
     <p>a CONTRATANTE e a CONTRATADA também doravante indistintamente referidos como "Parte" ou "Partes".</p>
     <p>As Partes têm entre si, justo e acordado, celebrar o presente Contrato de Locação de Veículos e Prestação de Serviços (o "Contrato"), que será regido pelos seguintes termos e condições:</p>
 
