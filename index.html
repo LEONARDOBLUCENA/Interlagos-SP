@@ -1002,7 +1002,7 @@ function gerarResumoHTML() {
 
   return `
     <div class="doc-topo">
-      <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)}<br>Gerado em ${dataGeracao}</div>
+      <div class="doc-meta">Documento gerado para: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)}<br>Gerado em ${dataGeracao}</div>
       <div class="doc-tag doc-tag-orcamento">Orçamento preliminar</div>
     </div>
     <h2 class="doc-titulo">Orçamento</h2>
@@ -1131,7 +1131,7 @@ function gerarContratoHTML(dataDe, dataAte, pagamento) {
 
   const documentoHTML = `
     <div class="doc-topo">
-      <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)}<br>Gerado em ${dataGeracao}</div>
+      <div class="doc-meta">Documento gerado para: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)}<br>Gerado em ${dataGeracao}</div>
       <div class="doc-tag doc-tag-contrato">Contrato</div>
     </div>
     <h2 class="doc-titulo">Contrato de Locação de Veículos e Prestação de Serviços</h2>
