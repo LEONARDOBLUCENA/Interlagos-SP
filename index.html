@@ -166,99 +166,141 @@ button {
 
 .preview-actions { margin-bottom: 16px; text-align: right; }
 
-/* Documento (estilo contrato) */
+/* Documento (estilo executivo — orçamento e contrato) */
 .documento {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #111;
+  font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #1a1a1a;
   padding: 10px 4px;
+  letter-spacing: 0.001em;
 }
-.documento h2.doc-titulo {
-  text-align: center;
-  font-size: 16px;
-  text-transform: uppercase;
-  margin-bottom: 20px;
+
+.documento .doc-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  border-bottom: 1px solid #d8d3ca;
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+  font-family: Arial, Helvetica, sans-serif;
 }
-.documento h3.doc-clausula {
-  font-size: 14px;
-  text-transform: uppercase;
-  margin-top: 24px;
-  margin-bottom: 10px;
-}
-.documento p { margin: 8px 0; text-align: justify; }
 .documento .doc-meta {
-  font-size: 11px;
-  color: #666;
-  text-align: right;
-  padding-bottom: 8px;
-  font-family: Arial, sans-serif;
+  font-size: 10.5px;
+  color: #8a8378;
+  line-height: 1.5;
 }
 .documento .doc-tag {
-  display: inline-block;
-  float: right;
-  clear: right;
-  font-family: Arial, sans-serif;
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 0.03em;
-  padding: 3px 10px;
-  border-radius: 4px;
-  margin-bottom: 16px;
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-bottom: 2px;
+  border-bottom: 2px solid currentColor;
 }
-.documento .doc-tag-orcamento {
-  background: #fbeeba;
-  color: #7a5b00;
-  border: 1px solid #e6c766;
+.documento .doc-tag-orcamento { color: #97741c; }
+.documento .doc-tag-contrato { color: #1f6b3a; }
+
+.documento h2.doc-titulo {
+  text-align: center;
+  font-size: 19px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--brand-dark);
+  margin: 22px 0 6px;
 }
-.documento .doc-tag-contrato {
-  background: #dcefe1;
-  color: #1f6b3a;
-  border: 1px solid #a9d8b6;
+.documento h2.doc-titulo::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 2px;
+  background: var(--brand-dark);
+  margin: 12px auto 0;
 }
-.documento .doc-titulo {
-  clear: both;
-}
-.documento .bloco-parte {
-  border: 1px solid #999;
-  padding: 10px 14px;
-  margin: 10px 0 16px;
-  font-family: Arial, sans-serif;
+
+.documento h3.doc-clausula {
   font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--brand-dark);
+  border-top: 1px solid #e3ded4;
+  margin-top: 30px;
+  padding-top: 14px;
+  margin-bottom: 12px;
+}
+.documento p { margin: 9px 0; text-align: justify; }
+
+.documento .bloco-parte {
+  border-left: 3px solid var(--brand-dark);
+  background: #faf9f6;
+  padding: 10px 16px;
+  margin: 10px 0 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
 }
 .documento .bloco-parte p { margin: 3px 0; text-align: left; }
+.documento .bloco-parte strong {
+  color: #8a8378;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
 .documento table.doc-resumo {
   width: 100%;
   border-collapse: collapse;
-  margin: 14px 0 18px;
-  font-family: Arial, sans-serif;
-  font-size: 12.5px;
+  margin: 16px 0 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
 }
-.documento table.doc-resumo th, .documento table.doc-resumo td {
-  border: 1px solid #999;
+.documento table.doc-resumo th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8a8378;
   padding: 6px 8px;
+  border-bottom: 2px solid var(--brand-dark);
+}
+.documento table.doc-resumo td {
+  padding: 8px;
+  border-bottom: 1px solid #e3ded4;
   text-align: left;
 }
-.documento table.doc-resumo th { background: #f0ede8; }
-.documento table.doc-resumo td.num { text-align: right; }
-.documento table.doc-resumo tfoot td { font-weight: bold; background: #f7f5f2; }
-.documento .assinaturas {
-  margin-top: 50px;
+.documento table.doc-resumo td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.documento table.doc-resumo tfoot td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 2px solid var(--brand-dark);
+  padding-top: 10px;
 }
+
+.documento .assinaturas { margin-top: 56px; }
 .documento .linha-assinatura {
-  margin-top: 46px;
+  margin-top: 48px;
   text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
 }
-.documento .linha-assinatura .linha { border-top: 1px solid #111; width: 320px; margin: 0 auto 6px; }
+.documento .linha-assinatura .linha { border-top: 1px solid #333; width: 320px; margin: 0 auto 6px; }
 .documento .testemunhas {
   display: flex;
   justify-content: space-between;
-  margin-top: 50px;
-  font-family: Arial, sans-serif;
-  font-size: 12.5px;
+  margin-top: 52px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11.5px;
+  color: #4a453e;
 }
 .documento .testemunhas .test { width: 45%; }
-.documento .testemunhas .linha { border-top: 1px solid #111; margin-bottom: 6px; }
+.documento .testemunhas .linha { border-top: 1px solid #333; margin-bottom: 6px; }
 
 /* Modal */
 .modal-overlay {
@@ -311,14 +353,23 @@ button {
   .total-inline { margin-left: 0; }
 }
 
+/* Zera a margem física da página: sem espaço reservado, o Chrome/Edge não
+   tem onde desenhar o cabeçalho/rodapé nativos de impressão (título, data,
+   URL, número de página) — por isso eles somem. A margem visual do
+   documento é recriada abaixo, via padding em .documento. */
+@page {
+  margin: 0;
+}
+
 @media print {
   body { background: #fff; }
   .topbar, .card:not(#preview-wrapper), .preview-actions, .modal-overlay { display: none !important; }
   .container { margin: 0; padding: 0; max-width: none; }
   #preview-wrapper { border: none; padding: 0; margin: 0; border-radius: 0; }
-  .documento { padding: 0; font-size: 12.5px; }
+  .documento { padding: 20mm 18mm; font-size: 12.5px; }
   .documento table.doc-resumo { page-break-inside: avoid; }
   .documento .assinaturas { page-break-inside: avoid; }
+  .documento h3.doc-clausula { page-break-after: avoid; }
 }
 
 </style>
@@ -950,9 +1001,11 @@ function gerarResumoHTML() {
   const tabelaResumo = criarTabelaResumo(itens, total);
 
   return `
-    <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)} — Gerado em ${dataGeracao}</div>
-    <div class="doc-tag doc-tag-orcamento">ORÇAMENTO — documento preliminar, sujeito à geração do Contrato</div>
-    <h2 class="doc-titulo">Orçamento<br>Drives Interlagos</h2>
+    <div class="doc-topo">
+      <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)}<br>Gerado em ${dataGeracao}</div>
+      <div class="doc-tag doc-tag-orcamento">Orçamento preliminar</div>
+    </div>
+    <h2 class="doc-titulo">Orçamento</h2>
 
     ${temContratante ? blocoContratante : ''}
     ${blocoContratada}
@@ -1077,9 +1130,11 @@ function gerarContratoHTML(dataDe, dataAte, pagamento) {
   const nomeAssinaturaContratante = dadosContratante.fantasia || dadosContratante.contratante || '';
 
   const documentoHTML = `
-    <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)} — Gerado em ${dataGeracao}</div>
-    <div class="doc-tag doc-tag-contrato">CONTRATO</div>
-    <h2 class="doc-titulo">Contrato de Locação de Veículos e Prestação de Serviços<br>Drives Interlagos</h2>
+    <div class="doc-topo">
+      <div class="doc-meta">Documento gerado por: ${escapeHtml(nome)} — Contato: ${escapeHtml(contato)}<br>Gerado em ${dataGeracao}</div>
+      <div class="doc-tag doc-tag-contrato">Contrato</div>
+    </div>
+    <h2 class="doc-titulo">Contrato de Locação de Veículos e Prestação de Serviços</h2>
 
     ${temContratante ? `
     <p>Pelo presente instrumento particular, de um lado,</p>
